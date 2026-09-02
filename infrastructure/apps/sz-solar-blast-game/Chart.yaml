@@ -2,7 +2,7 @@ apiVersion: v2
 name: sz-solar-blast-game
 description: A Helm chart for Solar Blast — a 30-second solar-cannon arcade shooter for Stage Zero activations
 version: 0.1.0
-appVersion: "0.0.0"
+appVersion: "a083b91"
 type: application
 keywords:
   - static
