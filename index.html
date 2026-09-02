@@ -329,6 +329,7 @@
           <div class="breakdown-row"><span>Collectibles</span><b id="bdCollect">0</b></div>
           <div class="breakdown-row"><span>Streak Bonus</span><b id="bdStreak">0</b></div>
           <div class="breakdown-row"><span>Solar Blast Finale</span><b id="bdFinale">0</b></div>
+          <div class="breakdown-row penalty"><span>Missed</span><b id="bdMissed">0</b></div>
           <div class="breakdown-row total"><span>Total</span><b id="bdTotal">0</b></div>
         </div>
         <div class="go-badge" id="bestBadge" hidden>New Best!</div>
@@ -383,7 +384,7 @@
         <div class="info-block">
           <ul>
             <li><b>Tap anywhere</b> to fire the solar cannon at that spot. Every hit scores points — there's no wrong target.</li>
-            <li>🧱 Power blocks, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away.</li>
+            <li>🧱 Power blocks, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away. Let one drift off unhit and it costs you 15 points and breaks your streak, so keep firing.</li>
             <li>☀️ Solar charges your streak, 🔋 batteries give you rapid-fire for a few seconds, and 💰 energy coins are pure bonus points.</li>
             <li>60 seconds, three stages: easy and slow to start, faster at 40 seconds left, and <b>everything goes crazy</b> in the last 20 — that's <b>🚨 MEGA POWER MODE</b>.</li>
             <li>When the clock hits zero, the <b>☀️ Solar Blast finale</b> auto-detonates everything left on screen for one last escalating burst of points.</li>
@@ -561,7 +562,8 @@
   var elapsed = 0, timeLeft = BASE_ROUND_SECONDS;
   var score = 0, hitsCount = 0, missCount = 0, shotsFired = 0;
   var streak = 0, bestStreak = 0;
-  var targetsScore = 0, collectScore = 0, streakScore = 0, finaleScore = 0;
+  var targetsScore = 0, collectScore = 0, streakScore = 0, finaleScore = 0, missPenalty = 0;
+  var MISS_PENALTY_PTS = 15; // a target that drifts off unhit costs a little -- not a wrong-target penalty, just a reason to keep firing
   var rapidFireUntil = 0;
   var shake = 0;
   var GOLDEN_CHANCE = 0.08, GOLDEN_MULT = 3;
@@ -586,7 +588,7 @@
     elapsed = 0; timeLeft = BASE_ROUND_SECONDS;
     score = 0; hitsCount = 0; missCount = 0; shotsFired = 0;
     streak = 0; bestStreak = 0;
-    targetsScore = 0; collectScore = 0; streakScore = 0; finaleScore = 0;
+    targetsScore = 0; collectScore = 0; streakScore = 0; finaleScore = 0; missPenalty = 0;
     rapidFireUntil = 0;
     shake = 0;
     phase = "easy"; megaShown = false;
@@ -748,7 +750,14 @@
       else { s.x += s.vx*dt; s.y += s.vy*dt; }
       if(s.x < -60 || s.x > LW+60 || s.y < -60 || s.y > LH+60){
         sprites.splice(i,1);
-        if(!s.collect) missCount++;
+        if(!s.collect){
+          missCount++;
+          score = Math.max(0, score - MISS_PENALTY_PTS);
+          missPenalty += MISS_PENALTY_PTS;
+          streak = 0;
+          spawnFloatText(Math.max(20,Math.min(LW-20,s.x)), Math.max(20,Math.min(LH-40,s.y)), "-"+MISS_PENALTY_PTS, "#FF4B3E");
+          updateHud();
+        }
       }
     }
 
@@ -1028,6 +1037,7 @@
     document.getElementById("bdCollect").textContent = collectScore;
     document.getElementById("bdStreak").textContent = streakScore;
     document.getElementById("bdFinale").textContent = finaleScore;
+    document.getElementById("bdMissed").textContent = missPenalty > 0 ? "-"+missPenalty : "0";
     document.getElementById("bdTotal").textContent = pendingScore;
 
     document.getElementById("offerRecap").textContent = "You blasted "+hitsCount+" targets for "+pendingScore+" points.";

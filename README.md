@@ -36,10 +36,13 @@ docker run --rm -p 8080:8080 solarblast:test    # http://localhost:8080
 3. **Things drift across the screen from every direction:** 🧱 power
    blocks (big, slow, easy), 👾 energy monsters (zigzag), 💸 electricity
    bills (fast, worth the most among targets), ☁️ clouds, and ⚡ power
-   thieves (small, fast, hardest to hit). Miss one and it just drifts off
-   — no penalty, this is a pure feel-good shooter.
-4. **☀️ Solar, 🔋 batteries and 💰 energy coins** drift in too. Solar and
-   coins are bonus points; a battery grants a few seconds of rapid-fire.
+   thieves (small, fast, hardest to hit). Let one drift off unhit and it
+   costs 15 points and resets your streak — the one small stick in an
+   otherwise all-carrot game, there purely to keep the pace up rather than
+   letting a player go idle.
+4. **☀️ Solar, 🔋 batteries and 💰 energy coins** drift in too — no penalty
+   for missing these, only targets cost you. Solar and coins are bonus
+   points; a battery grants a few seconds of rapid-fire.
 5. **Chain hits without missing for a streak bonus** — the longer the
    streak, the more each hit is worth (capped so it stays readable, not a
    runaway number), with a big "NICE! / ON FIRE! / LEGENDARY!" callout
