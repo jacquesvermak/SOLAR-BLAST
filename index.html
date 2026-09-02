@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Solar Blast</title>
+<meta name="description" content="30 seconds, one solar cannon. Blast power blocks, energy monsters and electricity bills for points — a Stage Zero arcade game.">
+<meta name="theme-color" content="#00144B">
+<style>
+  :root{
+    --navy-deep:#00144B;
+    --navy-panel:#101B3D;
+    --navy-panel-2:#182752;
+    --gold:#FFC400;
+    --gold-deep:#E8971A;
+    --storm:#4C63D2;
+    --surge:#48D56A;
+    --coral:#FF4B3E;
+    --cream:#FFF6E5;
+    --ink:#081026;
+    --line: rgba(255,255,255,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%; width:100%;
+    background:var(--navy-deep);
+    overscroll-behavior:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body{
+    position:fixed; inset:0;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none;
+    user-select:none;
+  }
+  h1,h2,h3,.display{ text-wrap:balance; }
+  button{ font-family:inherit; }
+
+  #stage{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+
+  .cabinet{
+    position:relative;
+    width:min(430px, 100%);
+    height:min(860px, 100%);
+    background:linear-gradient(180deg, var(--navy-panel-2), var(--navy-deep));
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,0.55);
+  }
+  @media (min-width:431px) and (min-height:861px){
+    .cabinet{ border-radius:38px; border:10px solid var(--navy-panel-2); }
+  }
+
+  canvas#game{
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    touch-action:none;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute; top:0; left:0; right:0;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 8px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px; row-gap:6px;
+    opacity:0; pointer-events:none; transition:opacity .25s;
+    z-index:5;
+  }
+  #hud.on{ opacity:1; pointer-events:auto; }
+  #hudTime, #hudScore, #btnGiveUp{
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    background:rgba(8,16,35,.42); border:1px solid rgba(255,255,255,.16);
+  }
+  #hudTime{
+    font-size:14px; font-weight:700; font-variant-numeric:tabular-nums;
+    padding:6px 12px; border-radius:999px;
+  }
+  #hudScore{
+    margin-left:auto; font-size:20px; font-weight:800; letter-spacing:.3px;
+    font-variant-numeric:tabular-nums; color:var(--gold);
+    padding:6px 13px; border-radius:999px;
+  }
+  #btnGiveUp{
+    appearance:none; border-radius:999px;
+    color:rgba(255,246,229,.75);
+    font-size:11px; font-weight:700; padding:6px 11px; cursor:pointer;
+  }
+  #btnGiveUp:active{ background:rgba(8,16,35,.65); }
+
+  /* ---------- gear / corner button ---------- */
+  .corner-btn{
+    position:absolute; z-index:6;
+    top:calc(env(safe-area-inset-top,0px) + 10px);
+    width:38px; height:38px; border-radius:50%;
+    background:rgba(255,255,255,.08); border:1px solid var(--line);
+    color:var(--cream); font-size:17px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  #btnGear{ right:10px; }
+
+  /* ---------- sheets ---------- */
+  .sheet{
+    position:absolute; inset:0; z-index:10;
+    display:flex; flex-direction:column;
+    padding:22px 22px calc(env(safe-area-inset-bottom,0px) + 22px);
+    background:linear-gradient(180deg, rgba(0,20,75,0) 0%, rgba(6,26,86,.72) 26%, var(--navy-deep) 56%);
+    transform:translateY(100%);
+    transition:transform .38s cubic-bezier(.22,.9,.3,1);
+    overflow-y:auto;
+    touch-action:pan-y;
+  }
+  .sheet.show{ transform:translateY(0); }
+  .sheet-inner{ margin:auto; width:100%; max-width:340px; display:flex; flex-direction:column; gap:12px; }
+
+  .logo-card{
+    background:var(--cream); border-radius:20px; padding:18px 22px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .logo-card svg{ width:100%; max-width:150px; height:auto; display:block; }
+
+  .title-block{ text-align:center; }
+  .title-block h1{
+    font-size:clamp(32px,9vw,46px); font-weight:900; font-style:italic; margin:4px 0 2px; color:var(--cream);
+    text-shadow:2px 2px 0 rgba(0,0,0,.4), 4px 4px 0 rgba(0,0,0,.15);
+    letter-spacing:-1.5px; line-height:0.92;
+  }
+  .title-block h1 .sun-word{ color:var(--gold); }
+  .title-block p{ margin:6px 0 0; font-size:14px; color:rgba(255,246,229,.75); font-weight:600; }
+  .title-block p b{ color:var(--gold); }
+
+  .btn{
+    appearance:none; border:none; border-radius:16px; cursor:pointer;
+    padding:16px 20px; font-size:17px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    min-height:52px; text-decoration:none;
+  }
+  .btn-primary{
+    background:linear-gradient(180deg, var(--gold), var(--gold-deep));
+    color:var(--ink);
+    box-shadow:0 6px 0 #a56a0d, 0 10px 24px rgba(0,0,0,.3);
+  }
+  .btn-primary:active{ transform:translateY(4px); box-shadow:0 2px 0 #a56a0d; }
+  .btn-boost{
+    background:linear-gradient(180deg, var(--surge), #1fb89d);
+    color:var(--ink);
+    box-shadow:0 6px 0 #157a68, 0 10px 24px rgba(0,0,0,.3);
+  }
+  .btn-boost:active{ transform:translateY(4px); box-shadow:0 2px 0 #157a68; }
+  .btn-outline{
+    background:rgba(255,255,255,.06); color:var(--cream); border:1.5px solid var(--line);
+  }
+  .btn-outline:active{ background:rgba(255,255,255,.14); }
+  .btn-outline.seg-active{ background:rgba(255,196,0,.18); border-color:var(--gold); color:var(--gold); }
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ flex:1; font-size:14px; padding:13px 10px; }
+  .btn-sm{ font-size:13px; min-height:40px; padding:9px 14px; border-radius:12px; }
+
+  .home-stats{ display:flex; justify-content:center; gap:22px; padding-top:4px; }
+  .home-stats div{ text-align:center; }
+  .home-stats b{ display:block; font-size:20px; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .home-stats span{ font-size:10.5px; color:rgba(255,246,229,.6); text-transform:uppercase; letter-spacing:.4px; }
+
+  .footer-link{
+    text-align:center; font-size:12px; color:rgba(255,246,229,.55);
+    text-decoration:none; padding-top:2px;
+  }
+  .footer-link b{ color:var(--gold); }
+
+  /* game over */
+  .go-badge{
+    align-self:center; background:var(--surge); color:var(--ink); font-weight:800;
+    font-size:12px; letter-spacing:.5px; padding:5px 12px; border-radius:999px;
+    text-transform:uppercase;
+  }
+  .score-big{ text-align:center; }
+  .score-big .num{ font-size:46px; font-weight:700; color:var(--gold); line-height:1; font-variant-numeric:tabular-nums; }
+  .score-big .lbl{ font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,246,229,.6); }
+  .rating{ text-align:center; font-size:26px; }
+  .rating .tier{ display:block; font-size:13px; font-weight:800; color:var(--gold); margin-top:2px; letter-spacing:.3px; }
+  .stat-row{ display:flex; justify-content:center; gap:16px; font-size:12.5px; color:rgba(255,246,229,.8); flex-wrap:wrap; }
+  .stat-row b{ display:block; color:var(--cream); font-size:15px; font-variant-numeric:tabular-nums; }
+  .breakdown{ background:rgba(255,255,255,.05); border-radius:14px; padding:12px 14px; font-size:13px; }
+  .breakdown-row{ display:flex; justify-content:space-between; padding:3px 0; }
+  .breakdown-row.total{ border-top:1px solid var(--line); margin-top:5px; padding-top:7px; font-weight:800; font-size:14.5px; }
+  .breakdown-row.penalty b{ color:var(--coral); }
+  .reveal-box{
+    background:rgba(72,213,106,.12); border:1.5px solid var(--surge); border-radius:16px;
+    padding:14px 16px; text-align:center; display:flex; flex-direction:column; gap:8px;
+  }
+  .reveal-box b{ color:var(--surge); }
+  .boost-note{ font-size:11px; color:rgba(255,246,229,.5); text-align:center; }
+  .stage-badge{
+    align-self:center; background:rgba(255,255,255,.08); border:1px solid var(--line);
+    color:rgba(255,246,229,.75); font-weight:800; font-size:11px; letter-spacing:.6px;
+    padding:5px 12px; border-radius:999px; text-transform:uppercase;
+  }
+
+  .name-entry{ display:flex; flex-direction:column; gap:6px; }
+  .name-entry-label{ font-size:12.5px; font-weight:700; color:var(--gold); text-align:center; }
+  .name-entry input{
+    width:100%; padding:13px 14px; border-radius:12px; border:1.5px dashed var(--gold);
+    background:rgba(255,196,0,.1); color:var(--cream); font-size:16px; font-weight:700; font-family:inherit;
+    text-align:center;
+  }
+  .name-entry input::placeholder{ color:rgba(255,246,229,.55); font-weight:500; }
+  .name-entry input:focus{ outline:2px solid var(--gold); outline-offset:1px; border-style:solid; }
+
+  .lb-list{ display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
+  .lb-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border-radius:10px; padding:8px 12px; font-size:13.5px; }
+  .lb-row.me{ background:rgba(255,196,0,.14); border:1px solid var(--gold); }
+  .lb-rank{ width:20px; text-align:center; font-weight:800; color:rgba(255,246,229,.55); }
+  .lb-name{ flex:1; font-weight:700; }
+  .lb-score{ font-variant-numeric:tabular-nums; font-weight:800; color:var(--gold); }
+  .lb-empty{ text-align:center; font-size:13px; color:rgba(255,246,229,.5); padding:16px 0; }
+
+  .info-block{ font-size:14px; line-height:1.55; color:rgba(255,246,229,.9); }
+  .info-block b{ color:var(--gold); }
+  .info-block ul{ margin:6px 0; padding-left:20px; }
+
+  .offer-box{ text-align:center; display:flex; flex-direction:column; gap:8px; }
+  .offer-box .headline{ font-weight:700; font-size:14.5px; }
+
+  form.lead{ display:flex; flex-direction:column; gap:10px; }
+  form.lead input{
+    width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--line);
+    background:rgba(255,255,255,.06); color:var(--cream); font-size:15px; font-family:inherit;
+  }
+  form.lead input::placeholder{ color:rgba(255,246,229,.4); }
+  form.lead input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+  .lead-note{ font-size:11.5px; color:rgba(255,246,229,.55); text-align:center; line-height:1.4; margin:0; }
+
+  .sales-stat{ text-align:center; }
+  .sales-stat .num{ font-size:38px; font-weight:800; color:var(--gold); }
+  .sales-stat .lbl{ font-size:12px; color:rgba(255,246,229,.6); text-transform:uppercase; letter-spacing:.4px; }
+
+  #toast{
+    position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 22px);
+    transform:translateX(-50%) translateY(20px);
+    background:rgba(8,16,35,.9); border:1px solid var(--line); border-radius:14px;
+    padding:11px 18px; font-size:13.5px; font-weight:600; text-align:center;
+    max-width:88%; z-index:30; opacity:0; transition:opacity .25s, transform .25s;
+    pointer-events:none;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  #megaBanner{
+    position:absolute; top:38%; left:50%; transform:translate(-50%,-50%) scale(.8);
+    z-index:25; text-align:center; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s;
+  }
+  #megaBanner.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #megaBanner .big{
+    font-size:30px; font-weight:900; font-style:italic; color:var(--coral);
+    text-shadow:3px 3px 0 rgba(0,0,0,.4); letter-spacing:-1px;
+  }
+  #megaBanner .small{ font-size:13px; font-weight:700; color:var(--cream); margin-top:2px; }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+
+  @media (prefers-reduced-motion: reduce){
+    .sheet{ transition:none; }
+    .btn{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="cabinet" id="cabinet">
+    <canvas id="game"></canvas>
+
+    <div id="hud">
+      <div id="hudTime">30s</div>
+      <button id="btnGiveUp">Give Up</button>
+      <div id="hudScore">0</div>
+    </div>
+
+    <button class="corner-btn" id="btnGear" aria-label="Sales tools">⚙</button>
+
+    <div id="megaBanner">
+      <div class="big">🚨 MEGA POWER MODE!</div>
+      <div class="small">Everything's coming at once — blast it all!</div>
+    </div>
+
+    <!-- HOME -->
+    <div class="sheet show" id="sheetHome">
+      <div class="sheet-inner">
+        <div class="logo-card">
+          <svg viewBox="0 0 129 48" xmlns="http://www.w3.org/2000/svg" fill="#00144B"><path d="M0 41.054H27.8186V47.9901H0V41.054ZM0 24.4074L23.6223 29.1636L0 33.9197V41.054L27.8186 35.4536V22.8557L0 17.2553V24.4074ZM101.183 22.8656V29.9999L122.076 25.7926V41.052H108.109V33.9178H101.181V47.9881H129V17.2553L101.183 22.8656ZM33.8063 22.9033V41.0639L61.6249 35.4536V22.8933L33.8063 22.9033ZM40.7342 32.5266V29.8374H54.0873L40.7342 32.5266ZM61.6269 41.0639H33.8142V48H61.6249L61.6269 41.0639ZM67.4958 29.8374H87.7768L67.4958 33.9217V47.9921H74.4238V43.7769L95.3164 47.9821V40.8479L81.9138 38.1488L95.3085 35.4536V22.8933H67.4939L67.4958 29.8374ZM32.5474 0.0042727C32.5964 -0.00391195 32.6466 -0.000302465 32.6939 0.0147958C32.7412 0.0298942 32.7842 0.056043 32.8194 0.0910947C32.8546 0.126146 32.881 0.169081 32.8963 0.216356C32.9117 0.263632 32.9156 0.313905 32.9077 0.362979V1.91665C32.9155 1.9658 32.9115 2.01609 32.8962 2.06342C32.8808 2.11075 32.8545 2.15376 32.8194 2.18895C32.7842 2.22414 32.7413 2.25049 32.694 2.26585C32.6467 2.28122 32.5965 2.28514 32.5474 2.27732H24.3665C23.747 2.27732 23.5015 2.62016 23.5015 3.19288V3.74778C23.5015 4.3423 23.7786 4.66334 24.3507 4.66334H30.473C32.3514 4.66334 33.3313 5.67798 33.3313 7.47542V8.78338C33.3313 10.3688 32.4168 11.4488 30.4413 11.4488H21.3954C21.15 11.4488 21.0193 11.3339 21.0193 11.0881V9.53444C21.0193 9.29069 21.15 9.17576 21.3954 9.17576H29.9682C30.5878 9.17576 30.8332 8.83292 30.8332 8.2602V7.59037C30.8332 6.98594 30.5561 6.67481 29.9841 6.67481H23.8598C21.9813 6.67481 21.0035 5.66015 21.0035 3.86271V2.67367C21.0035 1.08828 21.918 0.00824005 23.8934 0.00824005L32.5474 0.0042727ZM52.191 0.0042727C52.4345 0.0042727 52.5652 0.117243 52.5652 0.362979V1.96223C52.5715 2.01303 52.5663 2.06461 52.5498 2.11306C52.5333 2.16152 52.5059 2.20558 52.4699 2.24188C52.4338 2.27818 52.3899 2.30577 52.3416 2.32256C52.2933 2.33935 52.2418 2.34489 52.191 2.33877H47.0624V11.0842C47.0706 11.1332 47.067 11.1835 47.0519 11.2308C47.0368 11.2782 47.0107 11.3213 46.9757 11.3565C46.9407 11.3918 46.8978 11.4182 46.8506 11.4335C46.8033 11.4489 46.7531 11.4528 46.7041 11.4448H44.9227C44.8737 11.4528 44.8235 11.4489 44.7762 11.4335C44.729 11.4182 44.6861 11.3918 44.6511 11.3565C44.6161 11.3213 44.59 11.2782 44.5749 11.2308C44.5598 11.1835 44.5562 11.1332 44.5644 11.0842V2.33877H39.4358C39.385 2.34489 39.3335 2.33935 39.2852 2.32256C39.2369 2.30577 39.193 2.27818 39.1569 2.24188C39.1209 2.20558 39.0935 2.16152 39.077 2.11306C39.0605 2.06461 39.0553 2.01303 39.0616 1.96223V0.359012C39.0616 0.113276 39.1923 0.000305352 39.4358 0.000305352L52.191 0.0042727ZM63.7171 0.0042727C64.5505 0.0042727 65.0552 0.265866 65.5956 1.24683L70.9994 11.0723C71.1142 11.2843 71.0667 11.4488 70.8014 11.4488H68.731C68.6535 11.4624 68.5737 11.4487 68.5051 11.4101C68.4365 11.3714 68.3835 11.3102 68.3549 11.2368L67.195 9.12622H59.5208L58.3925 11.2368C58.3629 11.3089 58.3099 11.369 58.242 11.4074C58.1742 11.4459 58.0955 11.4605 58.0184 11.4488H55.8945C55.6174 11.4488 55.5679 11.2843 55.6827 11.0723L61.039 1.24683C61.5774 0.255957 62.0683 0.0042727 62.7532 0.0042727H63.7171ZM60.5501 7.22968H66.1696L63.5726 2.43984C63.5567 2.40544 63.5313 2.37631 63.4994 2.35594C63.4675 2.33557 63.4304 2.32479 63.3925 2.32488H63.2955C63.2577 2.32479 63.2206 2.33557 63.1886 2.35594C63.1567 2.37631 63.1313 2.40544 63.1154 2.43984L60.5501 7.22968ZM89.0278 0.0042727C89.0768 -0.00391195 89.127 -0.000302465 89.1743 0.0147958C89.2216 0.0298942 89.2647 0.056043 89.2999 0.0910947C89.3351 0.126146 89.3614 0.169081 89.3768 0.216356C89.3921 0.263632 89.396 0.313905 89.3881 0.362979V1.96223C89.3881 2.20598 89.2733 2.33877 89.0278 2.33877H80.845C79.1625 2.33877 78.6676 2.82825 78.6676 4.56227V6.91658C78.6676 8.6506 79.1565 9.15793 80.845 9.15793H86.2329C86.8049 9.15793 87.0504 8.89634 87.0504 8.16706V6.84127C87.0504 6.69462 87.0009 6.62923 86.8525 6.62923H82.0682C82.0184 6.63387 81.9681 6.62716 81.9212 6.60964C81.8743 6.59212 81.832 6.56422 81.7973 6.52802C81.7627 6.49182 81.7367 6.44825 81.7212 6.40058C81.7057 6.35291 81.7012 6.30236 81.708 6.2527V5.02797C81.7012 4.97831 81.7057 4.92777 81.7212 4.88009C81.7367 4.83242 81.7627 4.78885 81.7973 4.75265C81.832 4.71646 81.8743 4.68856 81.9212 4.67103C81.9681 4.65351 82.0184 4.6468 82.0682 4.65144H88.8774C88.9439 4.6418 89.0116 4.64783 89.0753 4.66903C89.139 4.69022 89.1969 4.72601 89.2444 4.77353C89.2919 4.82106 89.3276 4.87901 89.3488 4.9428C89.3699 5.00658 89.3759 5.07443 89.3663 5.14095V8.95182C89.3663 10.783 88.6478 11.4528 87.3414 11.4528H80.746C77.4483 11.4528 76.1736 10.2756 76.1736 7.13655V4.3205C76.1736 1.18143 77.4483 0.0042727 80.746 0.0042727H89.0278ZM107.634 0.0042727C107.88 0.0042727 108.01 0.117243 108.01 0.362979V1.91665C108.01 2.16239 107.88 2.27732 107.634 2.27732H100.499C98.8002 2.27732 98.3212 2.78268 98.3212 4.50085V4.66334H107.547C107.596 4.65553 107.646 4.65947 107.694 4.67483C107.741 4.69019 107.784 4.71653 107.819 4.75171C107.854 4.7869 107.881 4.82991 107.896 4.87724C107.911 4.92457 107.915 4.97486 107.907 5.02401V6.32205C107.915 6.3712 107.911 6.42149 107.896 6.46882C107.881 6.51615 107.854 6.55916 107.819 6.59435C107.784 6.62954 107.741 6.65589 107.694 6.67125C107.646 6.68662 107.596 6.69054 107.547 6.68272H98.3212V6.96017C98.3212 8.67635 98.7942 9.18367 100.499 9.18367H107.634C107.88 9.18367 108.01 9.29863 108.01 9.54238V11.0961C108.01 11.3418 107.88 11.4567 107.634 11.4567H100.449C97.1513 11.4567 95.8766 10.2796 95.8766 7.14051V4.3205C95.8766 1.18143 97.1513 0.0042727 100.449 0.0042727H107.634Z"/></svg>
+        </div>
+        <div class="title-block">
+          <h1>SOLAR<span class="sun-word">☀️</span>BLAST</h1>
+          <p>30 seconds. One cannon. <b>Blast everything.</b></p>
+        </div>
+        <button class="btn btn-primary" id="btnPlay">▶ Play</button>
+        <div class="btn-row">
+          <button class="btn btn-outline" id="btnLeaderboardHome">🏆 Leaderboard</button>
+          <button class="btn btn-outline" id="btnInfo">ℹ️ How to Play</button>
+        </div>
+        <div class="home-stats">
+          <div><b id="homeBest">0</b><span>High Score</span></div>
+          <div><b id="homeBlasted">0</b><span>Best Blasted</span></div>
+          <div><b id="homePlays">0</b><span>Plays</span></div>
+        </div>
+        <a class="footer-link" href="https://stagezero.co.za" target="_blank" rel="noopener noreferrer">A game by <b>Stage Zero</b> — powered by the sun →</a>
+      </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div class="sheet" id="sheetOver">
+      <div class="sheet-inner">
+        <h2 id="overHeading" style="text-align:center;margin:0;color:var(--surge);font-size:24px;">☀️ Solar Blast!</h2>
+        <div class="score-big">
+          <div class="num" id="finalScore">0</div>
+          <div class="lbl">score</div>
+        </div>
+        <div class="name-entry" id="nameEntry">
+          <label class="name-entry-label" for="lbNameInput">🏆 Add your name to the leaderboard</label>
+          <input type="text" id="lbNameInput" placeholder="Your name" maxlength="14" autocomplete="off">
+        </div>
+        <div class="rating" id="ratingStars">⭐⭐⭐<span class="tier" id="ratingTier">Solar Sharpshooter</span></div>
+        <div class="stat-row">
+          <div>Blasted<br><b id="statHits">0</b></div>
+          <div>Best Streak<br><b id="statStreak">0</b></div>
+          <div>Accuracy<br><b id="statAccuracy">0%</b></div>
+        </div>
+        <div class="breakdown" id="scoreBreakdown">
+          <div class="breakdown-row"><span>Targets</span><b id="bdTargets">0</b></div>
+          <div class="breakdown-row"><span>Collectibles</span><b id="bdCollect">0</b></div>
+          <div class="breakdown-row"><span>Streak Bonus</span><b id="bdStreak">0</b></div>
+          <div class="breakdown-row"><span>Solar Blast Finale</span><b id="bdFinale">0</b></div>
+          <div class="breakdown-row total"><span>Total</span><b id="bdTotal">0</b></div>
+        </div>
+        <div class="go-badge" id="bestBadge" hidden>New Best!</div>
+        <div class="reveal-box" id="percentileReveal" hidden><div>🔥 <b id="percentileText">Top 10%</b> on this device today</div></div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnPlayAgain">↻ Play Again</button>
+          <button class="btn btn-outline" id="btnShare">📤 Share</button>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btnGameOverHome">🏠 Home</button>
+
+        <div class="offer-box" id="offerBox">
+          <div class="headline" id="offerRecap">You blasted 24 targets for 3,450 points.</div>
+          <div style="font-size:13px;">Want to see how much a real Stage Zero solar system could save you?</div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnSeeOptions">See My Solar Options</button>
+        </div>
+
+        <form class="lead" id="leadForm" hidden>
+          <input type="text" id="leadName" placeholder="Your name" required maxlength="24" autocomplete="given-name">
+          <input type="email" id="leadEmail" placeholder="Email (optional)" autocomplete="email">
+          <input type="tel" id="leadPhone" placeholder="Mobile (optional)" autocomplete="tel">
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline btn-sm seg-btn" data-seg="residential">🏠 Residential</button>
+            <button type="button" class="btn btn-outline btn-sm seg-btn" data-seg="business">🏢 Business</button>
+          </div>
+          <button type="submit" class="btn btn-primary">Send My Details</button>
+          <p class="lead-note">No spam, promise ☀️</p>
+        </form>
+        <div class="reveal-box" id="leadThanks" hidden>
+          <div>✅ Thanks! We'll be in touch with your solar options.</div>
+          <a class="btn btn-outline btn-sm" href="https://stagezero.co.za" target="_blank" rel="noopener noreferrer">Visit stagezero.co.za →</a>
+        </div>
+
+        <div class="lb-list" id="lbListOver"></div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="sheet" id="sheetLeaderboard">
+      <div class="sheet-inner">
+        <h2 style="text-align:center;margin:0;color:var(--gold);">🏆 Leaderboard</h2>
+        <div class="lb-list" id="lbListMain"></div>
+        <button class="btn btn-primary" id="btnLbPlay">▶ Play</button>
+        <button class="btn btn-outline" id="btnLbClose">Back</button>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="sheet" id="sheetInfo">
+      <div class="sheet-inner">
+        <h2 style="text-align:center;margin:0;color:var(--gold);">How to Play</h2>
+        <div class="info-block">
+          <ul>
+            <li><b>Tap anywhere</b> to fire the solar cannon at that spot. Every hit scores points — there's no wrong target.</li>
+            <li>🧱 Power blocks, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away.</li>
+            <li>☀️ Solar charges your streak, 🔋 batteries give you rapid-fire for a few seconds, and 💰 energy coins are pure bonus points.</li>
+            <li>30 seconds, three stages: easy and slow to start, faster at 20 seconds left, and <b>everything goes crazy</b> in the last 10 — that's <b>🚨 MEGA POWER MODE</b>.</li>
+            <li>When the clock hits zero, the <b>☀️ Solar Blast finale</b> auto-detonates everything left on screen for one last escalating burst of points.</li>
+            <li>Chain hits without missing for a <b>streak bonus</b> — the longer the streak, the more each hit is worth.</li>
+          </ul>
+        </div>
+        <button class="btn btn-primary" id="btnInfoClose">Got it</button>
+      </div>
+    </div>
+
+    <!-- SALES / LEADS -->
+    <div class="sheet" id="sheetSales">
+      <div class="sheet-inner">
+        <h2 style="text-align:center;margin:0;color:var(--surge);">Sales Tools</h2>
+        <div class="sales-stat">
+          <div class="num" id="leadCount">0</div>
+          <div class="lbl">leads captured on this device</div>
+        </div>
+        <div class="info-block" style="text-align:center;font-size:12.5px;">
+          Hand the tablet to a kid, let them blast for 30 seconds, then ask
+          the adult with them "want to see what a real Stage Zero solar
+          system could do for your bill?" — the game is the icebreaker,
+          the lead form is the follow-through. Export the leads at the end
+          of a booth session and hand them to sales.
+        </div>
+        <button class="btn btn-primary" id="btnExportLeads">⬇ Export Leads (CSV)</button>
+        <button class="btn btn-outline btn-sm" id="btnClearData">Clear device data</button>
+        <button class="btn btn-outline" id="btnSalesClose">Back</button>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================== storage ============================== */
+  var LS_KEY = "solarblast_v1";
+  function loadData(){
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if(!raw) return {leaderboard:[], leads:[], best:0};
+      var d = JSON.parse(raw);
+      return {
+        leaderboard: Array.isArray(d.leaderboard) ? d.leaderboard : [],
+        leads: Array.isArray(d.leads) ? d.leads : [],
+        best: typeof d.best === "number" ? d.best : 0
+      };
+    }catch(e){ return {leaderboard:[], leads:[], best:0}; }
+  }
+  function saveData(d){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(d)); }catch(e){}
+  }
+  var DATA = loadData();
+
+  /* ============================== sheets / nav ============================== */
+  var sheets = {
+    home: document.getElementById("sheetHome"),
+    over: document.getElementById("sheetOver"),
+    leaderboard: document.getElementById("sheetLeaderboard"),
+    info: document.getElementById("sheetInfo"),
+    sales: document.getElementById("sheetSales")
+  };
+  function showSheet(name){
+    Object.keys(sheets).forEach(function(k){ sheets[k].classList.toggle("show", k===name); });
+    document.getElementById("btnGear").style.display = (name==="home"||name==="leaderboard"||name==="info"||name==="sales") ? "flex" : "none";
+  }
+  function hideAllSheets(){
+    Object.keys(sheets).forEach(function(k){ sheets[k].classList.remove("show"); });
+    document.getElementById("btnGear").style.display = "none";
+  }
+
+  /* ============================== leaderboard render ============================== */
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function renderLbInto(container, highlightScore){
+    var rows = DATA.leaderboard.slice().sort(function(a,b){ return b.score-a.score; }).slice(0,10);
+    if(!rows.length){
+      container.innerHTML = '<div class="lb-empty">No runs yet — be the first!</div>';
+      return;
+    }
+    container.innerHTML = rows.map(function(r, i){
+      var mine = (typeof highlightScore === "number" && r.score === highlightScore && r._justAdded);
+      return '<div class="lb-row'+(mine?' me':'')+'"><div class="lb-rank">'+(i+1)+'</div>' +
+        '<div class="lb-name">'+escapeHtml(r.name)+'</div>' +
+        '<div class="lb-score">'+r.score+'</div></div>';
+    }).join("");
+  }
+
+  function updateHomeStats(){
+    document.getElementById("homeBest").textContent = DATA.best;
+    var bestHits = DATA.leaderboard.reduce(function(m,r){ return Math.max(m, r.hits||0); }, 0);
+    document.getElementById("homeBlasted").textContent = bestHits;
+    document.getElementById("homePlays").textContent = DATA.leaderboard.length;
+  }
+  function computePercentile(score){
+    var scores = DATA.leaderboard.map(function(r){ return r.score; });
+    if(scores.length < 5) return null;
+    var below = scores.filter(function(s){ return s < score; }).length;
+    var pct = Math.round(100 - (below/scores.length)*100);
+    return Math.max(1, Math.min(99, pct));
+  }
+
+  /* ============================== toast ============================== */
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+  }
+
+  var megaBannerEl = document.getElementById("megaBanner");
+  var megaBannerTimer = null;
+  function showMegaBanner(){
+    megaBannerEl.classList.add("show");
+    clearTimeout(megaBannerTimer);
+    megaBannerTimer = setTimeout(function(){ megaBannerEl.classList.remove("show"); }, 1800);
+  }
+
+  /* ============================== canvas / engine ============================== */
+  var canvas = document.getElementById("game");
+  var ctx = canvas.getContext("2d");
+  var LW = 390, LH = 700;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+  function resize(){
+    var rect = document.getElementById("cabinet").getBoundingClientRect();
+    LH = 700; LW = Math.round(LH * (rect.width/rect.height));
+    canvas.width = Math.round(rect.width*dpr);
+    canvas.height = Math.round(rect.height*dpr);
+    ctx.setTransform(canvas.width/LW, 0, 0, canvas.height/LH, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+
+  var STATE = "home"; // home | playing | finale | over
+  var UI_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+  var BASE_ROUND_SECONDS = 30;
+  var STREAK_BONUS_PER_HIT = 5; // extra points per streak level, capped
+  var STREAK_BONUS_CAP = 100;
+  var RAPID_FIRE_SECONDS = 5;
+  var RAPID_FIRE_COOLDOWN = 90; // ms between shots while rapid-fire active
+  var NORMAL_COOLDOWN = 220; // ms between shots normally
+
+  var TARGET_TYPES = [
+    { key:"block", emoji:"🧱", label:"Power Block", points:50, radius:27, speed:0.55, weight:3 },
+    { key:"monster", emoji:"👾", label:"Energy Monster", points:100, radius:24, speed:0.85, weight:3, zigzag:true },
+    { key:"bill", emoji:"💸", label:"Electricity Bill", points:150, radius:20, speed:1.15, weight:2 },
+    { key:"cloud", emoji:"☁️", label:"Cloud", points:80, radius:30, speed:0.5, weight:2 },
+    { key:"thief", emoji:"⚡", label:"Power Thief", points:200, radius:18, speed:1.4, weight:1 }
+  ];
+  var COLLECT_TYPES = [
+    { key:"solar", emoji:"☀️", label:"Solar", points:120, radius:24, speed:0.7, weight:2, collect:"solar" },
+    { key:"battery", emoji:"🔋", label:"Battery", points:100, radius:24, speed:0.7, weight:1, collect:"battery" },
+    { key:"coin", emoji:"💰", label:"Energy Coin", points:150, radius:22, speed:0.75, weight:2, collect:"coin" }
+  ];
+  var TARGET_WEIGHT_SUM = TARGET_TYPES.reduce(function(s,t){ return s+t.weight; }, 0);
+  var COLLECT_WEIGHT_SUM = COLLECT_TYPES.reduce(function(s,t){ return s+t.weight; }, 0);
+
+  function pickWeighted(list, sum){
+    var r = Math.random()*sum, acc = 0;
+    for(var i=0;i<list.length;i++){ acc += list[i].weight; if(r <= acc) return list[i]; }
+    return list[list.length-1];
+  }
+
+  var elapsed = 0, timeLeft = BASE_ROUND_SECONDS;
+  var score = 0, hitsCount = 0, missCount = 0, shotsFired = 0;
+  var streak = 0, bestStreak = 0;
+  var targetsScore = 0, collectScore = 0, streakScore = 0, finaleScore = 0;
+  var rapidFireUntil = 0;
+  var phase = "easy"; // easy | fast | crazy
+  var megaShown = false;
+  var sprites = []; // {type, x, y, vx, vy, radius, spawnT, dead}
+  var projectiles = []; // {x,y,vx,vy}
+  var particles = [];
+  var floatTexts = [];
+  var nextSpawnAt = 0;
+  var finaleQueue = [], finaleNextAt = 0, finaleBonusStep = 0;
+  var lastT = 0;
+
+  var cannon = { x: 0, y: 0, angle: -Math.PI/2, targetAngle: -Math.PI/2, barrelLen: 46 };
+
+  function layoutCannon(){
+    cannon.x = LW/2; cannon.y = LH - 46;
+  }
+
+  function resetRun(){
+    elapsed = 0; timeLeft = BASE_ROUND_SECONDS;
+    score = 0; hitsCount = 0; missCount = 0; shotsFired = 0;
+    streak = 0; bestStreak = 0;
+    targetsScore = 0; collectScore = 0; streakScore = 0; finaleScore = 0;
+    rapidFireUntil = 0;
+    phase = "easy"; megaShown = false;
+    sprites = []; projectiles = []; particles = []; floatTexts = [];
+    nextSpawnAt = 0.4;
+    finaleQueue = []; finaleNextAt = 0; finaleBonusStep = 0;
+    cannon.angle = cannon.targetAngle = -Math.PI/2;
+    layoutCannon();
+    updateHud();
+  }
+
+  function updateHud(){
+    document.getElementById("hudTime").textContent = Math.ceil(timeLeft) + "s";
+    document.getElementById("hudScore").textContent = score;
+  }
+
+  resize();
+  layoutCannon();
+  resetRun();
+
+  /* ---- spawning ---- */
+  function currentPhaseConfig(){
+    if(timeLeft > 20) return { spawnGap:0.85, speedMult:0.75, maxConcurrent:4, name:"easy" };
+    if(timeLeft > 10) return { spawnGap:0.55, speedMult:1.1, maxConcurrent:6, name:"fast" };
+    return { spawnGap:0.3, speedMult:1.6, maxConcurrent:10, name:"crazy" };
+  }
+
+  function spawnSprite(){
+    var cfg = currentPhaseConfig();
+    var isCollect = Math.random() < 0.3;
+    var def = isCollect ? pickWeighted(COLLECT_TYPES, COLLECT_WEIGHT_SUM) : pickWeighted(TARGET_TYPES, TARGET_WEIGHT_SUM);
+    var side = Math.floor(Math.random()*3); // 0 left, 1 right, 2 top
+    var x, y, vx, vy;
+    var spd = (40 + Math.random()*30) * def.speed * cfg.speedMult;
+    if(side === 0){ x = -def.radius; y = 40 + Math.random()*(LH*0.55); vx = spd; vy = (Math.random()-0.5)*20; }
+    else if(side === 1){ x = LW+def.radius; y = 40 + Math.random()*(LH*0.55); vx = -spd; vy = (Math.random()-0.5)*20; }
+    else { x = 20 + Math.random()*(LW-40); y = -def.radius; vx = (Math.random()-0.5)*20; vy = spd*0.8; }
+    sprites.push({
+      def:def, x:x, y:y, vx:vx, vy:vy, radius:def.radius, spawnT:elapsed,
+      zigzagPhase: Math.random()*Math.PI*2, dead:false, collect: !!isCollect
+    });
+  }
+
+  /* ---- input: tap to fire ---- */
+  var lastShotAt = -9999;
+  canvas.addEventListener("pointerdown", function(e){
+    if(STATE !== "playing") return;
+    var rect = canvas.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / rect.width * LW;
+    var py = (e.clientY - rect.top) / rect.height * LH;
+    var cooldown = (rapidFireUntil > elapsed) ? RAPID_FIRE_COOLDOWN : NORMAL_COOLDOWN;
+    var now = performance.now();
+    if(now - lastShotAt < cooldown) return;
+    lastShotAt = now;
+    fireAt(px, py);
+  });
+
+  function fireAt(px, py){
+    var dx = px - cannon.x, dy = py - cannon.y;
+    var ang = Math.atan2(dy, dx);
+    // clamp so the barrel always aims into the upper half, never underground
+    var minA = -Math.PI + 0.12, maxA = -0.12;
+    if(ang > maxA) ang = maxA;
+    if(ang < minA) ang = minA;
+    cannon.targetAngle = ang;
+    var tipX = cannon.x + Math.cos(ang)*cannon.barrelLen;
+    var tipY = cannon.y + Math.sin(ang)*cannon.barrelLen;
+    var speed = 620;
+    projectiles.push({ x:tipX, y:tipY, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed });
+    shotsFired++;
+  }
+
+  function spawnParticles(x, y, color, n){
+    for(var i=0;i<n;i++){
+      particles.push({
+        x:x, y:y, vx:(Math.random()-0.5)*220, vy:(Math.random()-1.1)*220,
+        life: 0.45+Math.random()*0.35, age:0, color:color, size:3+Math.random()*3
+      });
+    }
+  }
+  function spawnFloatText(x, y, text, color, big){
+    floatTexts.push({ x:x, y:y, text:text, color:color, age:0, life:0.8, big:!!big });
+  }
+
+  function streakMultiplierBonus(){
+    return Math.min(STREAK_BONUS_CAP, streak*STREAK_BONUS_PER_HIT);
+  }
+
+  function registerHit(sprite, x, y){
+    var def = sprite.def;
+    var bonus = streakMultiplierBonus();
+    var pts = def.points + bonus;
+    score += pts;
+    hitsCount++;
+    streak++;
+    if(streak > bestStreak) bestStreak = streak;
+    if(bonus > 0) streakScore += bonus;
+    if(sprite.collect){
+      collectScore += def.points;
+      if(def.collect === "battery"){ rapidFireUntil = elapsed + RAPID_FIRE_SECONDS; toast("🔋 Rapid fire!"); }
+    } else {
+      targetsScore += def.points;
+    }
+    spawnParticles(x, y, sprite.collect ? "#48D56A" : "#FFC400", 14);
+    spawnFloatText(x, y, "+"+pts, sprite.collect ? "#48D56A" : "#FFC400");
+    updateHud();
+  }
+
+  /* ---- update ---- */
+  function update(dt){
+    elapsed += dt;
+    timeLeft = Math.max(0, BASE_ROUND_SECONDS - elapsed);
+    updateHud();
+
+    var cfg = currentPhaseConfig();
+    if(cfg.name !== phase){
+      phase = cfg.name;
+      if(phase === "fast") toast("⚡ Things are speeding up!");
+      if(phase === "crazy" && !megaShown){ megaShown = true; showMegaBanner(); }
+    }
+
+    if(timeLeft <= 0){
+      startFinale();
+      return;
+    }
+
+    nextSpawnAt -= dt;
+    if(nextSpawnAt <= 0 && sprites.length < cfg.maxConcurrent){
+      spawnSprite();
+      nextSpawnAt = cfg.spawnGap * (0.7 + Math.random()*0.6);
+    }
+
+    // cannon barrel eases toward target angle
+    var angDiff = cannon.targetAngle - cannon.angle;
+    cannon.angle += angDiff * Math.min(1, dt*14);
+
+    // sprites
+    for(var i=sprites.length-1;i>=0;i--){
+      var s = sprites[i];
+      if(s.def.zigzag){ s.x += s.vx*dt; s.y += s.vy*dt + Math.sin(elapsed*4 + s.zigzagPhase)*40*dt; }
+      else { s.x += s.vx*dt; s.y += s.vy*dt; }
+      if(s.x < -60 || s.x > LW+60 || s.y < -60 || s.y > LH+60){
+        sprites.splice(i,1);
+        if(!s.collect) missCount++;
+      }
+    }
+
+    // projectiles
+    for(var p=projectiles.length-1;p>=0;p--){
+      var pr = projectiles[p];
+      pr.x += pr.vx*dt; pr.y += pr.vy*dt;
+      if(pr.x < -20 || pr.x > LW+20 || pr.y < -20 || pr.y > LH+20){ projectiles.splice(p,1); continue; }
+      var hit = false;
+      for(var j=sprites.length-1;j>=0;j--){
+        var sp = sprites[j];
+        var dx = pr.x - sp.x, dy = pr.y - sp.y;
+        if(dx*dx + dy*dy <= (sp.radius+6)*(sp.radius+6)){
+          registerHit(sp, sp.x, sp.y);
+          sprites.splice(j,1);
+          hit = true;
+          break;
+        }
+      }
+      if(hit) projectiles.splice(p,1);
+    }
+
+    updateParticlesAndText(dt);
+  }
+
+  function updateParticlesAndText(dt){
+    for(var i=particles.length-1;i>=0;i--){
+      var pt = particles[i];
+      pt.age += dt;
+      if(pt.age >= pt.life){ particles.splice(i,1); continue; }
+      pt.x += pt.vx*dt; pt.y += pt.vy*dt; pt.vy += 260*dt;
+    }
+    for(var f=floatTexts.length-1;f>=0;f--){
+      var ft = floatTexts[f];
+      ft.age += dt;
+      if(ft.age >= ft.life){ floatTexts.splice(f,1); continue; }
+      ft.y -= 40*dt;
+    }
+  }
+
+  /* ---- Solar Blast finale ---- */
+  function startFinale(){
+    STATE = "finale";
+    var remaining = sprites.slice();
+    finaleQueue = remaining;
+    sprites = [];
+    finaleBonusStep = 0;
+    finaleNextAt = 0;
+    toast("☀️ SOLAR BLAST!");
+    if(!finaleQueue.length){
+      finalizeFinale();
+    }
+  }
+
+  var FINALE_BONUS_SEQUENCE = [500, 1000, 2000];
+
+  function updateFinale(dt){
+    finaleNextAt -= dt;
+    if(finaleNextAt <= 0 && finaleQueue.length){
+      var s = finaleQueue.shift();
+      var bonus = FINALE_BONUS_SEQUENCE[Math.min(finaleBonusStep, FINALE_BONUS_SEQUENCE.length-1)];
+      finaleBonusStep++;
+      score += bonus;
+      finaleScore += bonus;
+      hitsCount++;
+      spawnParticles(s.x, s.y, "#FFC400", 26);
+      spawnFloatText(s.x, s.y, "+"+bonus, "#FFC400", true);
+      updateHud();
+      finaleNextAt = 0.16;
+      if(!finaleQueue.length){
+        setTimeout(finalizeFinale, 700);
+      }
+    }
+    updateParticlesAndText(dt);
+  }
+
+  function finalizeFinale(){
+    if(STATE !== "finale") return;
+    gameOver();
+  }
+
+  /* ---- draw ---- */
+  function drawBackground(){
+    var grad = ctx.createLinearGradient(0,0,0,LH);
+    grad.addColorStop(0, "#1a4fb8");
+    grad.addColorStop(0.5, "#2f6fd6");
+    grad.addColorStop(1, "#7fb8ee");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,LW,LH);
+
+    // sun
+    ctx.save();
+    var sunX = LW*0.78, sunY = LH*0.14, sunR = 42;
+    var sg = ctx.createRadialGradient(sunX,sunY,4, sunX,sunY,sunR*2.2);
+    sg.addColorStop(0, "rgba(255,196,0,0.9)");
+    sg.addColorStop(1, "rgba(255,196,0,0)");
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(sunX,sunY,sunR*2.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#FFC400";
+    ctx.beginPath(); ctx.arc(sunX,sunY,sunR*0.55,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // ground
+    ctx.fillStyle = "#0e2f14";
+    ctx.fillRect(0, LH-30, LW, 30);
+    ctx.fillStyle = "#164a1c";
+    ctx.fillRect(0, LH-34, LW, 6);
+  }
+
+  function drawCannon(){
+    ctx.save();
+    // base
+    ctx.fillStyle = "#182752";
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(cannon.x-30, cannon.y-8, 60, 26, 8); ctx.fill(); }
+    else ctx.fillRect(cannon.x-30, cannon.y-8, 60, 26);
+    ctx.strokeStyle = "rgba(255,246,229,0.4)"; ctx.lineWidth = 2;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(cannon.x-30, cannon.y-8, 60, 26, 8); ctx.stroke(); }
+
+    // barrel
+    ctx.save();
+    ctx.translate(cannon.x, cannon.y);
+    ctx.rotate(cannon.angle + Math.PI/2);
+    ctx.fillStyle = "#FFC400";
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(-8, -cannon.barrelLen, 16, cannon.barrelLen+6, 6); ctx.fill(); }
+    else ctx.fillRect(-8, -cannon.barrelLen, 16, cannon.barrelLen+6);
+    ctx.strokeStyle = "#00144B"; ctx.lineWidth = 2;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(-8, -cannon.barrelLen, 16, cannon.barrelLen+6, 6); ctx.stroke(); }
+    ctx.restore();
+
+    // pivot cap
+    ctx.fillStyle = "#48D56A";
+    ctx.beginPath(); ctx.arc(cannon.x, cannon.y, 11, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#00144B"; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,246,229,0.85)"; ctx.font = "800 9px "+UI_FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("SOLAR CANNON", cannon.x, cannon.y+14);
+    ctx.restore();
+  }
+
+  function drawSprites(){
+    sprites.forEach(function(s){
+      ctx.save();
+      ctx.font = (s.radius*1.7)+"px sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      if(s.collect){
+        ctx.shadowColor = "rgba(72,213,106,0.7)"; ctx.shadowBlur = 14;
+      } else {
+        ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 6;
+      }
+      ctx.fillText(s.def.emoji, s.x, s.y);
+      ctx.restore();
+    });
+  }
+
+  function drawProjectiles(){
+    projectiles.forEach(function(p){
+      ctx.save();
+      var g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,10);
+      g.addColorStop(0, "rgba(255,255,255,0.95)");
+      g.addColorStop(0.4, "rgba(255,196,0,0.9)");
+      g.addColorStop(1, "rgba(255,196,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawParticlesAndText(){
+    particles.forEach(function(pt){
+      var a = 1 - pt.age/pt.life;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0,a);
+      ctx.fillStyle = pt.color;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+    floatTexts.forEach(function(ft){
+      var a = 1 - ft.age/ft.life;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0,a);
+      ctx.fillStyle = ft.color;
+      ctx.font = "800 "+(ft.big?22:15)+"px "+UI_FONT;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    });
+  }
+
+  function draw(){
+    drawBackground();
+    drawSprites();
+    drawCannon();
+    drawProjectiles();
+    drawParticlesAndText();
+
+    if(rapidFireUntil > elapsed && STATE === "playing"){
+      ctx.save();
+      ctx.fillStyle = "#48D56A"; ctx.font = "800 11px "+UI_FONT;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("🔋 RAPID FIRE "+Math.ceil(rapidFireUntil-elapsed)+"s", LW/2, LH-58);
+      ctx.restore();
+    }
+    if(streak >= 3 && STATE === "playing"){
+      ctx.save();
+      ctx.fillStyle = "#FFC400"; ctx.font = "800 12px "+UI_FONT;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("🔥 "+streak+" STREAK", LW/2, 40);
+      ctx.restore();
+    }
+  }
+
+  function loop(t){
+    if(!lastT) lastT = t;
+    var dt = Math.min(0.05, (t-lastT)/1000);
+    lastT = t;
+    if(STATE === "playing") update(dt);
+    else if(STATE === "finale") updateFinale(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* ============================== game flow ============================== */
+  var hud = document.getElementById("hud");
+  var pendingScore = 0;
+  var lastLeaderboardEntry = null, lastEnteredName = "";
+
+  function startGame(){
+    hideAllSheets();
+    resetRun();
+    STATE = "playing";
+    hud.classList.add("on");
+  }
+
+  function ratingFor(finalScore){
+    if(finalScore >= 5000) return { stars:"⭐⭐⭐", tier:"Solar Overlord" };
+    if(finalScore >= 3000) return { stars:"⭐⭐⭐", tier:"Blast Master" };
+    if(finalScore >= 1500) return { stars:"⭐⭐", tier:"Solar Sharpshooter" };
+    if(finalScore >= 600) return { stars:"⭐", tier:"Getting Warmed Up" };
+    return { stars:"✨", tier:"First Light" };
+  }
+
+  function gameOver(){
+    STATE = "over";
+    hud.classList.remove("on");
+
+    pendingScore = score;
+    var accuracy = shotsFired > 0 ? Math.round((hitsCount/shotsFired)*100) : 0;
+
+    document.getElementById("finalScore").textContent = pendingScore;
+    document.getElementById("statHits").textContent = hitsCount;
+    document.getElementById("statStreak").textContent = bestStreak;
+    document.getElementById("statAccuracy").textContent = Math.min(100,accuracy)+"%";
+
+    var rating = ratingFor(pendingScore);
+    document.getElementById("ratingStars").innerHTML = rating.stars + '<span class="tier" id="ratingTier">'+rating.tier+'</span>';
+
+    document.getElementById("bdTargets").textContent = targetsScore;
+    document.getElementById("bdCollect").textContent = collectScore;
+    document.getElementById("bdStreak").textContent = streakScore;
+    document.getElementById("bdFinale").textContent = finaleScore;
+    document.getElementById("bdTotal").textContent = pendingScore;
+
+    document.getElementById("offerRecap").textContent = "You blasted "+hitsCount+" targets for "+pendingScore+" points.";
+
+    var isBest = pendingScore > DATA.best;
+    document.getElementById("bestBadge").hidden = !isBest;
+    if(isBest) DATA.best = pendingScore;
+
+    document.getElementById("nameEntry").hidden = false;
+    document.getElementById("lbNameInput").value = lastEnteredName;
+
+    var lbEntry = { name: lastEnteredName || "Player", score:pendingScore, hits:hitsCount, ts:Date.now(), _justAdded:true };
+    DATA.leaderboard.push(lbEntry);
+    lastLeaderboardEntry = lbEntry;
+    saveData(DATA);
+    updateHomeStats();
+
+    var pct = computePercentile(pendingScore);
+    var revealEl = document.getElementById("percentileReveal");
+    if(pct !== null){
+      document.getElementById("percentileText").textContent = "Top "+pct+"%";
+      revealEl.hidden = false;
+    } else {
+      revealEl.hidden = true;
+    }
+    renderLbInto(document.getElementById("lbListOver"), pendingScore);
+
+    document.getElementById("offerBox").hidden = false;
+    document.getElementById("leadForm").hidden = true;
+    document.getElementById("leadThanks").hidden = true;
+    document.getElementById("leadName").value = "";
+    document.getElementById("leadEmail").value = "";
+    document.getElementById("leadPhone").value = "";
+    selectedSegment = null;
+    document.querySelectorAll(".seg-btn").forEach(function(b){ b.classList.remove("seg-active"); });
+
+    showSheet("over");
+  }
+
+  /* ============================== leads ============================== */
+  var selectedSegment = null;
+  function updateLeadCount(){
+    document.getElementById("leadCount").textContent = DATA.leads.length;
+  }
+
+  document.getElementById("lbNameInput").addEventListener("input", function(){
+    var v = this.value.trim();
+    lastEnteredName = v;
+    if(lastLeaderboardEntry){
+      lastLeaderboardEntry.name = v || "Player";
+      saveData(DATA);
+      renderLbInto(document.getElementById("lbListOver"), pendingScore);
+    }
+  });
+
+  document.getElementById("btnPlay").addEventListener("click", startGame);
+  document.getElementById("btnLbPlay").addEventListener("click", startGame);
+  document.getElementById("btnPlayAgain").addEventListener("click", startGame);
+  document.getElementById("btnGameOverHome").addEventListener("click", function(){ showSheet("home"); });
+
+  document.getElementById("btnGiveUp").addEventListener("click", function(){
+    if(STATE === "playing") startFinale();
+  });
+
+  document.getElementById("btnLeaderboardHome").addEventListener("click", function(){
+    renderLbInto(document.getElementById("lbListMain"));
+    showSheet("leaderboard");
+  });
+  document.getElementById("btnLbClose").addEventListener("click", function(){ showSheet("home"); });
+  document.getElementById("btnInfo").addEventListener("click", function(){ showSheet("info"); });
+  document.getElementById("btnInfoClose").addEventListener("click", function(){ showSheet("home"); });
+  document.getElementById("btnGear").addEventListener("click", function(){
+    updateLeadCount();
+    showSheet("sales");
+  });
+  document.getElementById("btnSalesClose").addEventListener("click", function(){ showSheet("home"); });
+
+  document.getElementById("btnSeeOptions").addEventListener("click", function(){
+    document.getElementById("offerBox").hidden = true;
+    document.getElementById("leadForm").hidden = false;
+  });
+
+  document.querySelectorAll(".seg-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      selectedSegment = btn.dataset.seg;
+      document.querySelectorAll(".seg-btn").forEach(function(b){ b.classList.toggle("seg-active", b===btn); });
+    });
+  });
+
+  function commitLead(name, email, phone){
+    DATA.leads.push({ name:name, email:email, phone:phone, segment:selectedSegment, score:pendingScore, ts:Date.now() });
+    saveData(DATA);
+    document.getElementById("leadForm").hidden = true;
+    document.getElementById("leadThanks").hidden = false;
+  }
+
+  document.getElementById("leadForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = document.getElementById("leadName").value.trim();
+    var email = document.getElementById("leadEmail").value.trim();
+    var phone = document.getElementById("leadPhone").value.trim();
+    if(!name) return;
+    commitLead(name, email, phone);
+  });
+
+  document.getElementById("btnShare").addEventListener("click", function(){
+    var text = "I just scored "+pendingScore+" points in Solar Blast! ☀️🔫 Can you beat me?";
+    if(navigator.share){
+      navigator.share({ title:"Solar Blast", text:text }).catch(function(){});
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){ toast("Copied to clipboard!"); }).catch(function(){});
+    }
+  });
+
+  document.getElementById("btnExportLeads").addEventListener("click", function(){
+    if(!DATA.leads.length){ toast("No leads captured yet"); return; }
+    var header = "name,email,phone,segment,score,timestamp\n";
+    var rows = DATA.leads.map(function(l){
+      return [l.name, l.email, l.phone, l.segment||"", l.score, new Date(l.ts).toISOString()]
+        .map(function(v){ return '"'+String(v||"").replace(/"/g,'""')+'"'; }).join(",");
+    }).join("\n");
+    var blob = new Blob([header+rows], { type:"text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "solar-blast-leads.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+    toast("Exported "+DATA.leads.length+" lead(s)");
+  });
+
+  document.getElementById("btnClearData").addEventListener("click", function(){
+    if(!confirm("Clear all scores and leads saved on this device? This can't be undone.")) return;
+    DATA = { leaderboard:[], leads:[], best:0 };
+    saveData(DATA);
+    updateLeadCount();
+    updateHomeStats();
+    toast("Device data cleared");
+  });
+
+  updateHomeStats();
+
+  // Prevent iOS rubber-band scroll on the game canvas/HUD, but not inside a
+  // .sheet — sheets rely on native touch-scroll (overflow-y:auto) to reach
+  // content taller than the cabinet.
+  document.addEventListener("touchmove", function(e){
+    if(e.target.closest(".sheet")) return;
+    e.preventDefault();
+  }, { passive:false });
+})();
+</script>
+</body>
+</html>
