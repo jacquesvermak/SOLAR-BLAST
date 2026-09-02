@@ -9,7 +9,7 @@
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 
 LABEL org.opencontainers.image.title="sz-solar-blast-game" \
-      org.opencontainers.image.description="Solar Blast — a 30-second solar-cannon arcade shooter for Stage Zero activations" \
+      org.opencontainers.image.description="Solar Blast — a 60-second solar-cannon arcade shooter for Stage Zero activations" \
       org.opencontainers.image.vendor="Stage Zero"
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
