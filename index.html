@@ -387,7 +387,8 @@
             <li>☀️ Solar charges your streak, 🔋 batteries give you rapid-fire for a few seconds, and 💰 energy coins are pure bonus points.</li>
             <li>60 seconds, three stages: easy and slow to start, faster at 40 seconds left, and <b>everything goes crazy</b> in the last 20 — that's <b>🚨 MEGA POWER MODE</b>.</li>
             <li>When the clock hits zero, the <b>☀️ Solar Blast finale</b> auto-detonates everything left on screen for one last escalating burst of points.</li>
-            <li>Chain hits without missing for a <b>streak bonus</b> — the longer the streak, the more each hit is worth.</li>
+            <li>Chain hits without missing for a <b>streak bonus</b> — the longer the streak, the more each hit is worth, with a big on-screen callout every 5 in a row.</li>
+            <li>Watch for a <b>🌟 golden glow</b> — any target or collectible can occasionally spawn golden, worth triple points.</li>
           </ul>
         </div>
         <button class="btn btn-primary" id="btnInfoClose">Got it</button>
@@ -562,6 +563,9 @@
   var streak = 0, bestStreak = 0;
   var targetsScore = 0, collectScore = 0, streakScore = 0, finaleScore = 0;
   var rapidFireUntil = 0;
+  var shake = 0;
+  var GOLDEN_CHANCE = 0.08, GOLDEN_MULT = 3;
+  var COMBO_CALLOUTS = ["NICE!", "SWEET!", "AWESOME!", "ON FIRE!", "UNSTOPPABLE!", "LEGENDARY!"];
   var phase = "easy"; // easy | fast | crazy
   var megaShown = false;
   var sprites = []; // {type, x, y, vx, vy, radius, spawnT, dead}
@@ -584,6 +588,7 @@
     streak = 0; bestStreak = 0;
     targetsScore = 0; collectScore = 0; streakScore = 0; finaleScore = 0;
     rapidFireUntil = 0;
+    shake = 0;
     phase = "easy"; megaShown = false;
     sprites = []; projectiles = []; particles = []; floatTexts = [];
     nextSpawnAt = 0.4;
@@ -621,7 +626,8 @@
     else { x = 20 + Math.random()*(LW-40); y = -def.radius; vx = (Math.random()-0.5)*20; vy = spd*0.8; }
     sprites.push({
       def:def, x:x, y:y, vx:vx, vy:vy, radius:def.radius, spawnT:elapsed,
-      zigzagPhase: Math.random()*Math.PI*2, dead:false, collect: !!isCollect
+      zigzagPhase: Math.random()*Math.PI*2, dead:false, collect: !!isCollect,
+      golden: Math.random() < GOLDEN_CHANCE
     });
   }
 
@@ -672,21 +678,38 @@
 
   function registerHit(sprite, x, y){
     var def = sprite.def;
+    var basePts = sprite.golden ? def.points*GOLDEN_MULT : def.points;
     var bonus = streakMultiplierBonus();
-    var pts = def.points + bonus;
+    var pts = basePts + bonus;
     score += pts;
     hitsCount++;
     streak++;
     if(streak > bestStreak) bestStreak = streak;
     if(bonus > 0) streakScore += bonus;
     if(sprite.collect){
-      collectScore += def.points;
+      collectScore += basePts;
       if(def.collect === "battery"){ rapidFireUntil = elapsed + RAPID_FIRE_SECONDS; toast("🔋 Rapid fire!"); }
     } else {
-      targetsScore += def.points;
+      targetsScore += basePts;
     }
-    spawnParticles(x, y, sprite.collect ? "#48D56A" : "#FFC400", 14);
-    spawnFloatText(x, y, "+"+pts, sprite.collect ? "#48D56A" : "#FFC400");
+
+    var color = sprite.collect ? "#48D56A" : "#FFC400";
+    shake = Math.min(18, shake + (sprite.golden ? 14 : 5));
+
+    if(sprite.golden){
+      spawnParticles(x, y, "#FFC400", 30);
+      spawnFloatText(x, y-18, "🌟 JACKPOT!", "#FFC400", true);
+      spawnFloatText(x, y+14, "+"+pts, "#FFC400");
+    } else {
+      spawnParticles(x, y, color, 14);
+      spawnFloatText(x, y, "+"+pts, color);
+    }
+
+    if(streak > 0 && streak % 5 === 0){
+      var idx = Math.min(COMBO_CALLOUTS.length-1, (streak/5)-1);
+      spawnFloatText(LW/2, LH*0.32, COMBO_CALLOUTS[idx], "#FFC400", true);
+      shake = Math.min(18, shake + 6);
+    }
     updateHud();
   }
 
@@ -793,6 +816,7 @@
       hitsCount++;
       spawnParticles(s.x, s.y, "#FFC400", 26);
       spawnFloatText(s.x, s.y, "+"+bonus, "#FFC400", true);
+      shake = Math.min(22, shake + 10);
       updateHud();
       finaleNextAt = 0.16;
       if(!finaleQueue.length){
@@ -869,9 +893,19 @@
   function drawSprites(){
     sprites.forEach(function(s){
       ctx.save();
+      if(s.golden){
+        var pulse = 0.6 + 0.4*Math.sin(elapsed*10);
+        var g = ctx.createRadialGradient(s.x,s.y,0, s.x,s.y,s.radius*1.9);
+        g.addColorStop(0, "rgba(255,196,0,"+(0.55*pulse)+")");
+        g.addColorStop(1, "rgba(255,196,0,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.radius*1.9,0,Math.PI*2); ctx.fill();
+      }
       ctx.font = (s.radius*1.7)+"px sans-serif";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      if(s.collect){
+      if(s.golden){
+        ctx.shadowColor = "rgba(255,196,0,0.95)"; ctx.shadowBlur = 20;
+      } else if(s.collect){
         ctx.shadowColor = "rgba(72,213,106,0.7)"; ctx.shadowBlur = 14;
       } else {
         ctx.shadowColor = "rgba(0,0,0,0.35)"; ctx.shadowBlur = 6;
@@ -918,6 +952,8 @@
   }
 
   function draw(){
+    ctx.save();
+    if(shake > 0.5){ ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake); }
     drawBackground();
     drawSprites();
     drawCannon();
@@ -938,12 +974,14 @@
       ctx.fillText("🔥 "+streak+" STREAK", LW/2, 40);
       ctx.restore();
     }
+    ctx.restore();
   }
 
   function loop(t){
     if(!lastT) lastT = t;
     var dt = Math.min(0.05, (t-lastT)/1000);
     lastT = t;
+    shake = Math.max(0, shake - dt*32);
     if(STATE === "playing") update(dt);
     else if(STATE === "finale") updateFinale(dt);
     draw();

@@ -42,7 +42,11 @@ docker run --rm -p 8080:8080 solarblast:test    # http://localhost:8080
    coins are bonus points; a battery grants a few seconds of rapid-fire.
 5. **Chain hits without missing for a streak bonus** — the longer the
    streak, the more each hit is worth (capped so it stays readable, not a
-   runaway number).
+   runaway number), with a big "NICE! / ON FIRE! / LEGENDARY!" callout
+   every 5 hits in a row. Any target or collectible can also spawn
+   **🌟 golden** (a small random chance) worth triple points, with its own
+   jackpot particle burst — a pure-upside surprise, never a trap. Bigger
+   hits and the finale kick in a bit of screen shake for impact.
 6. **Three stages, all inside one 60-second clock:** easy and slow for the
    first 20 seconds, faster with more targets for the next 20, and
    **🚨 MEGA POWER MODE** for the final 20 — the screen fills with targets
