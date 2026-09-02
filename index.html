@@ -78,7 +78,9 @@
     margin-left:auto; font-size:20px; font-weight:800; letter-spacing:.3px;
     font-variant-numeric:tabular-nums; color:var(--gold);
     padding:6px 13px; border-radius:999px;
+    transition:color .15s, background .15s;
   }
+  #hudScore.missed{ color:var(--coral); background:rgba(255,75,62,.22); }
   #btnGiveUp{
     appearance:none; border-radius:999px;
     color:rgba(255,246,229,.75);
@@ -604,6 +606,13 @@
     document.getElementById("hudTime").textContent = Math.ceil(timeLeft) + "s";
     document.getElementById("hudScore").textContent = score;
   }
+  var missFlashTimer = null;
+  function flashScoreMiss(){
+    var el = document.getElementById("hudScore");
+    el.classList.add("missed");
+    clearTimeout(missFlashTimer);
+    missFlashTimer = setTimeout(function(){ el.classList.remove("missed"); }, 350);
+  }
 
   resize();
   layoutCannon();
@@ -755,8 +764,13 @@
           score = Math.max(0, score - MISS_PENALTY_PTS);
           missPenalty += MISS_PENALTY_PTS;
           streak = 0;
-          spawnFloatText(Math.max(20,Math.min(LW-20,s.x)), Math.max(20,Math.min(LH-40,s.y)), "-"+MISS_PENALTY_PTS, "#FF4B3E");
+          var mx = Math.max(20,Math.min(LW-20,s.x)), my = Math.max(20,Math.min(LH-40,s.y));
+          spawnFloatText(mx, my, "MISSED -"+MISS_PENALTY_PTS, "#FF4B3E", true);
+          spawnParticles(mx, my, "#FF4B3E", 10);
+          toast(s.def.emoji+" "+s.def.label+" got away! -"+MISS_PENALTY_PTS+" pts");
+          shake = Math.min(18, shake + 5);
           updateHud();
+          flashScoreMiss();
         }
       }
     }
