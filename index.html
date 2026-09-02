@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Solar Blast</title>
-<meta name="description" content="30 seconds, one solar cannon. Blast power blocks, energy monsters and electricity bills for points — a Stage Zero arcade game.">
+<meta name="description" content="60 seconds, one solar cannon. Blast power blocks, energy monsters and electricity bills for points — a Stage Zero arcade game.">
 <meta name="theme-color" content="#00144B">
 <style>
   :root{
@@ -270,7 +270,7 @@
     <canvas id="game"></canvas>
 
     <div id="hud">
-      <div id="hudTime">30s</div>
+      <div id="hudTime">60s</div>
       <button id="btnGiveUp">Give Up</button>
       <div id="hudScore">0</div>
     </div>
@@ -290,7 +290,7 @@
         </div>
         <div class="title-block">
           <h1>SOLAR<span class="sun-word">☀️</span>BLAST</h1>
-          <p>30 seconds. One cannon. <b>Blast everything.</b></p>
+          <p>60 seconds. One cannon. <b>Blast everything.</b></p>
         </div>
         <button class="btn btn-primary" id="btnPlay">▶ Play</button>
         <div class="btn-row">
@@ -385,7 +385,7 @@
             <li><b>Tap anywhere</b> to fire the solar cannon at that spot. Every hit scores points — there's no wrong target.</li>
             <li>🧱 Power blocks, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away.</li>
             <li>☀️ Solar charges your streak, 🔋 batteries give you rapid-fire for a few seconds, and 💰 energy coins are pure bonus points.</li>
-            <li>30 seconds, three stages: easy and slow to start, faster at 20 seconds left, and <b>everything goes crazy</b> in the last 10 — that's <b>🚨 MEGA POWER MODE</b>.</li>
+            <li>60 seconds, three stages: easy and slow to start, faster at 40 seconds left, and <b>everything goes crazy</b> in the last 20 — that's <b>🚨 MEGA POWER MODE</b>.</li>
             <li>When the clock hits zero, the <b>☀️ Solar Blast finale</b> auto-detonates everything left on screen for one last escalating burst of points.</li>
             <li>Chain hits without missing for a <b>streak bonus</b> — the longer the streak, the more each hit is worth.</li>
           </ul>
@@ -403,7 +403,7 @@
           <div class="lbl">leads captured on this device</div>
         </div>
         <div class="info-block" style="text-align:center;font-size:12.5px;">
-          Hand the tablet to a kid, let them blast for 30 seconds, then ask
+          Hand the tablet to a kid, let them blast for 60 seconds, then ask
           the adult with them "want to see what a real Stage Zero solar
           system could do for your bill?" — the game is the icebreaker,
           the lead form is the follow-through. Export the leads at the end
@@ -529,7 +529,7 @@
   var STATE = "home"; // home | playing | finale | over
   var UI_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-  var BASE_ROUND_SECONDS = 30;
+  var BASE_ROUND_SECONDS = 60;
   var STREAK_BONUS_PER_HIT = 5; // extra points per streak level, capped
   var STREAK_BONUS_CAP = 100;
   var RAPID_FIRE_SECONDS = 5;
@@ -604,8 +604,8 @@
 
   /* ---- spawning ---- */
   function currentPhaseConfig(){
-    if(timeLeft > 20) return { spawnGap:0.85, speedMult:0.75, maxConcurrent:4, name:"easy" };
-    if(timeLeft > 10) return { spawnGap:0.55, speedMult:1.1, maxConcurrent:6, name:"fast" };
+    if(timeLeft > 40) return { spawnGap:0.85, speedMult:0.75, maxConcurrent:4, name:"easy" };
+    if(timeLeft > 20) return { spawnGap:0.55, speedMult:1.1, maxConcurrent:6, name:"fast" };
     return { spawnGap:0.3, speedMult:1.6, maxConcurrent:10, name:"crazy" };
   }
 
@@ -964,10 +964,10 @@
   }
 
   function ratingFor(finalScore){
-    if(finalScore >= 5000) return { stars:"⭐⭐⭐", tier:"Solar Overlord" };
-    if(finalScore >= 3000) return { stars:"⭐⭐⭐", tier:"Blast Master" };
-    if(finalScore >= 1500) return { stars:"⭐⭐", tier:"Solar Sharpshooter" };
-    if(finalScore >= 600) return { stars:"⭐", tier:"Getting Warmed Up" };
+    if(finalScore >= 10000) return { stars:"⭐⭐⭐", tier:"Solar Overlord" };
+    if(finalScore >= 6000) return { stars:"⭐⭐⭐", tier:"Blast Master" };
+    if(finalScore >= 3000) return { stars:"⭐⭐", tier:"Solar Sharpshooter" };
+    if(finalScore >= 1200) return { stars:"⭐", tier:"Getting Warmed Up" };
     return { stars:"✨", tier:"First Light" };
   }
 

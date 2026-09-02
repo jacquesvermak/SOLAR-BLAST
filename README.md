@@ -1,6 +1,6 @@
-# Solar Blast — 30 seconds, one solar cannon, blast everything
+# Solar Blast — 60 seconds, one solar cannon, blast everything
 
-A kid grabs the tablet, taps to fire a giant solar cannon, and has 30
+A kid grabs the tablet, taps to fire a giant solar cannon, and has 60
 seconds to blast power blocks, energy monsters and electricity bills out
 of the sky before the clock runs out and the whole screen detonates in one
 final **Solar Blast**. Built as the fun, no-punishment counterpart to
@@ -29,7 +29,7 @@ docker run --rm -p 8080:8080 solarblast:test    # http://localhost:8080
 ## The loop
 
 1. **Tap Play.** A solar cannon sits at the bottom of the screen; the clock
-   starts at 30 seconds.
+   starts at 60 seconds.
 2. **Tap anywhere to fire.** The cannon aims at your tap and fires a bolt
    from its barrel. Anything the bolt touches is destroyed — there's no
    wrong target, every hit scores points.
@@ -43,9 +43,9 @@ docker run --rm -p 8080:8080 solarblast:test    # http://localhost:8080
 5. **Chain hits without missing for a streak bonus** — the longer the
    streak, the more each hit is worth (capped so it stays readable, not a
    runaway number).
-6. **Three stages, all inside one 30-second clock:** easy and slow for the
-   first 10 seconds, faster with more targets for the next 10, and
-   **🚨 MEGA POWER MODE** for the final 10 — the screen fills with targets
+6. **Three stages, all inside one 60-second clock:** easy and slow for the
+   first 20 seconds, faster with more targets for the next 20, and
+   **🚨 MEGA POWER MODE** for the final 20 — the screen fills with targets
    moving fast.
 7. **☀️ Solar Blast finale.** The instant the clock hits zero, every target
    still on screen auto-detonates in a rapid escalating sequence —
@@ -65,9 +65,9 @@ getting harder" while the clock counts down:
 
 | Time left | Spawn gap | Speed | Max on screen |
 | --- | --- | --- | --- |
-| 30s → 20s ("easy") | ~0.85s | 0.75× | 4 |
-| 20s → 10s ("fast") | ~0.55s | 1.1× | 6 |
-| 10s → 0s ("crazy" / Mega Power Mode) | ~0.3s | 1.6× | 10 |
+| 60s → 40s ("easy") | ~0.85s | 0.75× | 4 |
+| 40s → 20s ("fast") | ~0.55s | 1.1× | 6 |
+| 20s → 0s ("crazy" / Mega Power Mode) | ~0.3s | 1.6× | 10 |
 
 ### Why device-local leaderboard and leads, not a shared public one
 
