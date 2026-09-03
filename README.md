@@ -1,7 +1,7 @@
 # Solar Blast — 60 seconds, one solar cannon, blast everything
 
 A kid grabs the tablet, taps to fire a giant solar cannon, and has 60
-seconds to blast power blocks, energy monsters and electricity bills out
+seconds to blast broken panels, energy monsters and electricity bills out
 of the sky before the clock runs out and the whole screen detonates in one
 final **Solar Blast**. Built as the fun, no-punishment counterpart to
 [Don't Go Dark](https://github.com/jacquesvermak/Sunny-s-Power-Dash) — that
@@ -33,8 +33,8 @@ docker run --rm -p 8080:8080 solarblast:test    # http://localhost:8080
 2. **Tap anywhere to fire.** The cannon aims at your tap and fires a bolt
    from its barrel. Anything the bolt touches is destroyed — there's no
    wrong target, every hit scores points.
-3. **Things drift across the screen from every direction:** 🧱 power
-   blocks (big, slow, easy), 👾 energy monsters (zigzag), 💸 electricity
+3. **Things drift across the screen from every direction:** 🪟 broken
+   panels (big, slow, easy), 👾 energy monsters (zigzag), 💸 electricity
    bills (fast, worth the most among targets), ☁️ clouds, and ⚡ power
    thieves (small, fast, hardest to hit). Let one drift off unhit and it
    costs 15 points and resets your streak — the one small stick in an

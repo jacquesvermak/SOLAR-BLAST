@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Solar Blast</title>
-<meta name="description" content="60 seconds, one solar cannon. Blast power blocks, energy monsters and electricity bills for points — a Stage Zero arcade game.">
+<meta name="description" content="60 seconds, one solar cannon. Blast broken panels, energy monsters and electricity bills for points — a Stage Zero arcade game.">
 <meta name="theme-color" content="#00144B">
 <style>
   :root{
@@ -386,7 +386,7 @@
         <div class="info-block">
           <ul>
             <li><b>Tap anywhere</b> to fire the solar cannon at that spot. Every hit scores points — there's no wrong target.</li>
-            <li>🧱 Power blocks, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away. Let one drift off unhit and it costs you 15 points and breaks your streak, so keep firing.</li>
+            <li>🪟 Broken panels, 👾 energy monsters, 💸 electricity bills, ☁️ clouds and ⚡ power thieves drift across the screen — blast them all before they get away. Let one drift off unhit and it costs you 15 points and breaks your streak, so keep firing.</li>
             <li>☀️ Solar charges your streak, 🔋 batteries give you rapid-fire for a few seconds, and 💰 energy coins are pure bonus points.</li>
             <li>60 seconds, three stages: easy and slow to start, faster at 40 seconds left, and <b>everything goes crazy</b> in the last 20 — that's <b>🚨 MEGA POWER MODE</b>.</li>
             <li>When the clock hits zero, the <b>☀️ Solar Blast finale</b> auto-detonates everything left on screen for one last escalating burst of points.</li>
@@ -541,7 +541,7 @@
   var NORMAL_COOLDOWN = 220; // ms between shots normally
 
   var TARGET_TYPES = [
-    { key:"block", emoji:"🧱", label:"Power Block", points:50, radius:27, speed:0.55, weight:3 },
+    { key:"block", emoji:"🪟", label:"Broken Panel", points:50, radius:27, speed:0.55, weight:3 },
     { key:"monster", emoji:"👾", label:"Energy Monster", points:100, radius:24, speed:0.85, weight:3, zigzag:true },
     { key:"bill", emoji:"💸", label:"Electricity Bill", points:150, radius:20, speed:1.15, weight:2 },
     { key:"cloud", emoji:"☁️", label:"Cloud", points:80, radius:30, speed:0.5, weight:2 },
