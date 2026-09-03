@@ -9,7 +9,7 @@
 
 image:
   repository: harbor.qa.stagezero.co.za/library/sz-solar-blast-game
-  tag: "92e36bf"
+  tag: "920c746"
   pullPolicy: Always
 
 # Pull credentials for Harbor.
