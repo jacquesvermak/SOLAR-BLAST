@@ -469,14 +469,16 @@
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
     });
   }
-  /* Real, cross-device top 10 — a small shared API (see leaderboard-api/ in
-     this repo), not this device's localStorage. A name+score-only board has
-     none of the PII risk that ruled out a shared board for leads, so it's
-     worth doing properly. Network calls are always best-effort: a slow or
+  /* Real, cross-device top 10 — this game's own dedicated instance of the
+     leaderboard API (see leaderboard-api/ in the Don't Go Dark repo; that
+     game runs a separate instance with its own database, not a shared
+     one), not this device's localStorage. A name+score-only board has none
+     of the PII risk that ruled out a shared board for leads, so it's worth
+     doing properly. Network calls are always best-effort: a slow or
      unreachable API degrades to a friendly message, never breaks the rest
      of the results screen (score, rating, breakdown all render from purely
      local state already computed by the time this is called). */
-  var LEADERBOARD_API = "https://leaderboard-api.qa.stagezero.co.za";
+  var LEADERBOARD_API = "https://solarblast-leaderboard.qa.stagezero.co.za";
   var LEADERBOARD_GAME = "solar-blast";
 
   function apiFetch(path, opts){

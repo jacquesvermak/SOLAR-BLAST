@@ -81,9 +81,11 @@ getting harder" while the clock counts down:
 The top-10 board shown on the leaderboard screen and the results screen is
 **real and shared across every device** — backed by a small API
 ([`leaderboard-api/`](https://github.com/jacquesvermak/Sunny-s-Power-Dash/tree/main/leaderboard-api)
-in the Don't Go Dark repo, shared by both games) rather than this device's
-own history. A name-and-score-only board carries none of the PII risk that
-rules out a shared board for *leads* — that reasoning is unchanged, and
+in the Don't Go Dark repo, code-shared but *not* data-shared: this game
+runs its own dedicated instance with its own SQLite database, entirely
+separate from Don't Go Dark's — see that README for why) rather than this
+device's own history. A name-and-score-only board carries none of the PII
+risk that rules out a shared board for *leads* — that reasoning is unchanged, and
 leads (name, email, phone) still accumulate only in this device's
 `localStorage`, exactly the real sales-booth shape: one tablet, one rep,
 walking a queue of kids (and the adults with them) over an afternoon. The
