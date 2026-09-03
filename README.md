@@ -76,15 +76,27 @@ getting harder" while the clock counts down:
 | 40s → 20s ("fast") | ~0.55s | 1.1× | 6 |
 | 20s → 0s ("crazy" / Mega Power Mode) | ~0.3s | 1.6× | 10 |
 
-### Why device-local leaderboard and leads, not a shared public one
+### A real shared leaderboard, but device-local leads
 
-Same reasoning as Don't Go Dark: a shared/public leaderboard would put
-every player's name, email and phone number somewhere anyone with the
-link — including the players themselves — could read. Scores and leads
-accumulate in this device's `localStorage` instead, which is exactly the
-real sales-booth shape: one tablet, one rep, walking a queue of kids (and
-the adults with them) over an afternoon. The gear icon opens a **Sales
-Tools** panel that exports every captured lead as a CSV.
+The top-10 board shown on the leaderboard screen and the results screen is
+**real and shared across every device** — backed by a small API
+([`leaderboard-api/`](https://github.com/jacquesvermak/Sunny-s-Power-Dash/tree/main/leaderboard-api)
+in the Don't Go Dark repo, shared by both games) rather than this device's
+own history. A name-and-score-only board carries none of the PII risk that
+rules out a shared board for *leads* — that reasoning is unchanged, and
+leads (name, email, phone) still accumulate only in this device's
+`localStorage`, exactly the real sales-booth shape: one tablet, one rep,
+walking a queue of kids (and the adults with them) over an afternoon. The
+gear icon opens a **Sales Tools** panel that exports every captured lead
+as a CSV.
+
+The home screen's "High Score" and "Best Blasted" stats stay per-device on
+purpose — a personal best to beat on *this* tablet, distinct from the
+shared top 10. A submitted score is trusted at face value (see the API's
+own README for why that's an accepted limitation, not an oversight), and
+a network hiccup degrades to a friendly "couldn't load" message rather
+than breaking the results screen — your score, rating and breakdown are
+already computed locally by the time the leaderboard fetch happens.
 
 ## Architecture
 
@@ -140,9 +152,15 @@ disagree about the image tag.
 
 ## Known limits of this build
 
-- **Leaderboard and leads are per-device.** `localStorage` doesn't sync
-  across browsers or people — the deliberate trade-off, not an oversight
-  (see "Why device-local" above).
+- **Leads are per-device; the leaderboard isn't.** The top 10 is a real
+  shared board now (see above); leads (name/email/phone) still only live
+  in this device's `localStorage` — a deliberate trade-off for PII, not an
+  oversight.
+- **A submitted score isn't verified.** The leaderboard API trusts a
+  client-reported score at face value beyond a sanity ceiling — see
+  `leaderboard-api/README.md` for why that's an accepted limitation for a
+  booth activation, not something to silently "fix" without deciding a
+  server-authoritative game engine is worth the complexity.
 - **"Share" copies text, it doesn't post anywhere.** `Web Share` is used
   where the browser supports it, otherwise it falls back to clipboard copy.
 - **Lead export is a manual CSV download, not a live CRM push.**

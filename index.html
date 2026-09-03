@@ -469,18 +469,64 @@
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
     });
   }
-  function renderLbInto(container, highlightScore){
-    var rows = DATA.leaderboard.slice().sort(function(a,b){ return b.score-a.score; }).slice(0,10);
-    if(!rows.length){
-      container.innerHTML = '<div class="lb-empty">No runs yet — be the first!</div>';
-      return;
-    }
-    container.innerHTML = rows.map(function(r, i){
-      var mine = (typeof highlightScore === "number" && r.score === highlightScore && r._justAdded);
-      return '<div class="lb-row'+(mine?' me':'')+'"><div class="lb-rank">'+(i+1)+'</div>' +
-        '<div class="lb-name">'+escapeHtml(r.name)+'</div>' +
-        '<div class="lb-score">'+r.score+'</div></div>';
-    }).join("");
+  /* Real, cross-device top 10 — a small shared API (see leaderboard-api/ in
+     this repo), not this device's localStorage. A name+score-only board has
+     none of the PII risk that ruled out a shared board for leads, so it's
+     worth doing properly. Network calls are always best-effort: a slow or
+     unreachable API degrades to a friendly message, never breaks the rest
+     of the results screen (score, rating, breakdown all render from purely
+     local state already computed by the time this is called). */
+  var LEADERBOARD_API = "https://leaderboard-api.qa.stagezero.co.za";
+  var LEADERBOARD_GAME = "solar-blast";
+
+  function apiFetch(path, opts){
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 5000) : null;
+    var fetchOpts = opts || {};
+    if(ctrl) fetchOpts.signal = ctrl.signal;
+    return fetch(LEADERBOARD_API + path, fetchOpts).then(function(res){
+      if(timer) clearTimeout(timer);
+      if(!res.ok) throw new Error("http "+res.status);
+      return res.json();
+    }, function(err){
+      if(timer) clearTimeout(timer);
+      throw err;
+    });
+  }
+
+  function submitScore(scoreVal){
+    return apiFetch("/api/scores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game: LEADERBOARD_GAME, name: lastEnteredName || "Player", score: scoreVal })
+    });
+  }
+
+  function renameScore(id, name){
+    return apiFetch("/api/scores/"+id, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name })
+    }).catch(function(){ /* best-effort — a failed rename just leaves the old name showing */ });
+  }
+
+  function renderLbInto(container, highlightId){
+    container.innerHTML = '<div class="lb-empty">Loading…</div>';
+    apiFetch("/api/leaderboard?game="+LEADERBOARD_GAME+"&limit=10").then(function(data){
+      var rows = data.entries || [];
+      if(!rows.length){
+        container.innerHTML = '<div class="lb-empty">No runs yet — be the first!</div>';
+        return;
+      }
+      container.innerHTML = rows.map(function(r){
+        var mine = (typeof highlightId === "number" && r.id === highlightId);
+        return '<div class="lb-row'+(mine?' me':'')+'"><div class="lb-rank">'+r.rank+'</div>' +
+          '<div class="lb-name">'+escapeHtml(r.name)+'</div>' +
+          '<div class="lb-score">'+r.score+'</div></div>';
+      }).join("");
+    }).catch(function(){
+      container.innerHTML = '<div class="lb-empty">Couldn’t load the leaderboard right now.</div>';
+    });
   }
 
   function updateHomeStats(){
@@ -1015,7 +1061,8 @@
   /* ============================== game flow ============================== */
   var hud = document.getElementById("hud");
   var pendingScore = 0;
-  var lastLeaderboardEntry = null, lastEnteredName = "";
+  var lastSubmittedId = null, lastEnteredName = "";
+  var renameDebounceTimer = null;
 
   function startGame(){
     hideAllSheets();
@@ -1063,9 +1110,9 @@
     document.getElementById("nameEntry").hidden = false;
     document.getElementById("lbNameInput").value = lastEnteredName;
 
-    var lbEntry = { name: lastEnteredName || "Player", score:pendingScore, hits:hitsCount, ts:Date.now(), _justAdded:true };
-    DATA.leaderboard.push(lbEntry);
-    lastLeaderboardEntry = lbEntry;
+    // Local record for this device's own "Best Blasted" home stat only --
+    // the leaderboard display itself now comes from the shared API below.
+    DATA.leaderboard.push({ name: lastEnteredName || "Player", score:pendingScore, hits:hitsCount, ts:Date.now() });
     saveData(DATA);
     updateHomeStats();
 
@@ -1077,7 +1124,15 @@
     } else {
       revealEl.hidden = true;
     }
-    renderLbInto(document.getElementById("lbListOver"), pendingScore);
+
+    lastSubmittedId = null;
+    var lbListOverEl = document.getElementById("lbListOver");
+    submitScore(pendingScore).then(function(res){
+      lastSubmittedId = res.id;
+      renderLbInto(lbListOverEl, lastSubmittedId);
+    }).catch(function(){
+      lbListOverEl.innerHTML = '<div class="lb-empty">Couldn’t reach the leaderboard right now.</div>';
+    });
 
     document.getElementById("offerBox").hidden = false;
     document.getElementById("leadForm").hidden = true;
@@ -1100,10 +1155,16 @@
   document.getElementById("lbNameInput").addEventListener("input", function(){
     var v = this.value.trim();
     lastEnteredName = v;
-    if(lastLeaderboardEntry){
-      lastLeaderboardEntry.name = v || "Player";
-      saveData(DATA);
-      renderLbInto(document.getElementById("lbListOver"), pendingScore);
+    // Local record stays in sync immediately; the shared board is debounced
+    // (renameScore) so typing doesn't fire a PATCH per keystroke.
+    if(DATA.leaderboard.length){ DATA.leaderboard[DATA.leaderboard.length-1].name = v || "Player"; saveData(DATA); }
+    if(lastSubmittedId != null){
+      clearTimeout(renameDebounceTimer);
+      renameDebounceTimer = setTimeout(function(){
+        renameScore(lastSubmittedId, v || "Player").then(function(){
+          renderLbInto(document.getElementById("lbListOver"), lastSubmittedId);
+        });
+      }, 700);
     }
   });
 
